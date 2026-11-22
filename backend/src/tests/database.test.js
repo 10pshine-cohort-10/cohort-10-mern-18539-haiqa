@@ -31,6 +31,7 @@ describe('database helpers', () => {
 
   it('retries a failed first connection until it succeeds', async () => {
     let calls = 0;
+    /** @type {Array<[number, number]>} */
     const retries = [];
     const connection = connectWithRetry('mongodb://example', {
       baseDelayMs: 1,
@@ -59,5 +60,19 @@ describe('database helpers', () => {
     });
     expect(await connection.done).to.equal(false);
     expect(calls).to.equal(1);
+  });
+
+  it('reports false if cancelled while a connection attempt is still pending', async () => {
+    /** @type {() => void} */
+    let finishConnect = () => {};
+    const connection = connectWithRetry('mongodb://example', {
+      connect: () =>
+        new Promise((resolve) => {
+          finishConnect = resolve;
+        }),
+    });
+    connection.cancel();
+    finishConnect();
+    expect(await connection.done).to.equal(false);
   });
 });

@@ -148,7 +148,7 @@ Backend tests don't touch the real database. They cover the app setup, config ch
 
 Frontend tests cover routing, the System status card in all its states, the health hook and service, the sidebar and the shared components.
 
-Results on my machine: backend 27 passing, frontend 32 passing, both lint runs clean.
+Results on my machine: backend 28 passing, frontend 32 passing, both lint runs clean.
 
 ## Known issues
 

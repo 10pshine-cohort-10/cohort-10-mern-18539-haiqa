@@ -77,9 +77,15 @@ export function retryDelay(attempt) {
  */
 export function connectWithRetry(uri, { connect = connectDatabase, onRetry = () => {}, baseDelayMs = 2000 } = {}) {
   let cancelled = false;
+  /** @type {ReturnType<typeof setTimeout> | null} */
   let timer = null;
+  /** @type {((value?: unknown) => void) | null} */
   let wake = null;
 
+  /**
+   * @param {number} ms
+   * @returns {Promise<unknown>}
+   */
   const wait = (ms) =>
     new Promise((resolve) => {
       wake = resolve;
@@ -90,7 +96,7 @@ export function connectWithRetry(uri, { connect = connectDatabase, onRetry = () 
     for (let attempt = 1; !cancelled; attempt += 1) {
       try {
         await connect(uri);
-        return true;
+        return !cancelled;
       } catch {
         if (cancelled) break;
         const delayMs = (retryDelay(attempt) / 2000) * baseDelayMs;
@@ -105,7 +111,7 @@ export function connectWithRetry(uri, { connect = connectDatabase, onRetry = () 
     done,
     cancel() {
       cancelled = true;
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       if (wake) wake();
     },
   };
