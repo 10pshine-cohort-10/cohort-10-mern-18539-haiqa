@@ -59,7 +59,7 @@ export default function SystemStatusCard({ health, isLoading, error, onRefresh }
         )}
 
         {error && !isLoading && (
-          <div role="alert" className="flex items-start gap-3 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">
+          <div className="flex items-start gap-3 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">
             <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             <div>
               <p className="font-semibold">{error}</p>

@@ -1,6 +1,6 @@
 import config from './config/env.js';
 import createApp from './app.js';
-import { connectDatabase, disconnectDatabase } from './config/database.js';
+import { connectWithRetry, disconnectDatabase } from './config/database.js';
 import logger from './utils/logger.js';
 
 const app = createApp();
@@ -18,13 +18,24 @@ server.on('error', (error) => {
   process.exit(1);
 });
 
-// The API keeps running if MongoDB is down so /api/health can report the problem.
-connectDatabase(config.mongodbUri).catch(() => {
-  logger.warn('Check that MongoDB is running and MONGODB_URI in backend/.env is correct.');
+// The API keeps running if MongoDB is down so /api/health can report the problem,
+// and keeps retrying the connection until MongoDB is reachable.
+const databaseConnection = connectWithRetry(config.mongodbUri, {
+  onRetry: (attempt, delayMs) => {
+    logger.warn(
+      `MongoDB not reachable (attempt ${attempt}). Retrying in ${delayMs / 1000}s. Check that MongoDB is running and MONGODB_URI in backend/.env is correct.`,
+    );
+  },
 });
 
-async function shutdown(signal) {
+/**
+ * Stops retries, closes the HTTP server and the MongoDB connection, then exits.
+ * @param {'SIGINT' | 'SIGTERM'} signal - The signal that triggered the shutdown.
+ * @returns {void}
+ */
+function shutdown(signal) {
   logger.info(`${signal} received, shutting down`);
+  databaseConnection.cancel();
   server.close(async () => {
     try {
       await disconnectDatabase();

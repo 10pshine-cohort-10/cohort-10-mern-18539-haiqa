@@ -21,7 +21,7 @@ export default function Sidebar({ isOpen, onClose }) {
       <aside
         id="app-sidebar"
         aria-label="Main navigation"
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sage-700 px-4 py-6 text-white transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sage-700 px-4 py-6 text-white transition-[transform,visibility] duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${isOpen ? 'visible translate-x-0' : 'invisible -translate-x-full lg:visible'}`}
       >
         <div className="mb-8 flex items-center justify-between px-2">
           <Logo tone="light" />

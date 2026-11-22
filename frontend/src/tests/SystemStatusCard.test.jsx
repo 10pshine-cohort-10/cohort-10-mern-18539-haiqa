@@ -45,7 +45,7 @@ describe('SystemStatusCard', () => {
       />,
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Cannot reach the server');
+    expect(screen.getByText(/Cannot reach the server/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /check again/i }));
 

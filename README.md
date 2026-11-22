@@ -12,7 +12,7 @@ I'm building it week by week. This branch (`week-01-foundation`) is the starting
 
 **Backend**
 - Express 5 API (ES modules). `app.js` builds the app and `server.js` starts it, so tests can import the app without opening a port
-- MongoDB connection with Mongoose, connection events logged, clean shutdown on Ctrl + C
+- MongoDB connection with Mongoose, connection events logged, clean shutdown on Ctrl + C. If MongoDB is down at startup, the API keeps running and retries the connection (2s, 4s, 8s, 16s, then every 30s)
 - `GET /api/health` returns the API and database status (200 if MongoDB is connected, 503 if not)
 - `.env` settings are checked on startup, with `.env.example` as the template
 - Helmet security headers, CORS limited to the frontend URL, 100 KB body limit
@@ -37,7 +37,7 @@ The other sidebar pages are greyed out for now. The note cards on Home are sampl
 | | |
 |---|---|
 | Frontend | React 19, Vite, Tailwind CSS 4, React Router, Axios, Lucide, PropTypes |
-| Backend | Node.js 22/24, Express 5, Mongoose, Helmet, CORS, dotenv |
+| Backend | Node.js 22.18+/24.11+, Express 5, Mongoose, Helmet, CORS, dotenv |
 | Database | MongoDB (Atlas or local) |
 | Logging | Pino, pino-http |
 | Testing | Mocha, Chai, Supertest, c8 (backend), Jest, React Testing Library (frontend) |
@@ -75,7 +75,7 @@ frontend/src/
 
 ## Running it locally
 
-You need Node.js 22 or 24, Git, and a MongoDB database (a free Atlas cluster or MongoDB Community Server).
+You need Node.js 22.18+ or 24.11+, Git, and a MongoDB database (a free Atlas cluster or MongoDB Community Server).
 
 **Backend**
 
@@ -83,6 +83,11 @@ You need Node.js 22 or 24, Git, and a MongoDB database (a free Atlas cluster or 
 cd backend
 npm install
 Copy-Item .env.example .env
+```
+
+The copied `.env` points at a local MongoDB (`mongodb://127.0.0.1:27017/leafnote`). If you use MongoDB Atlas, open `backend/.env` now and replace `MONGODB_URI` with your Atlas connection string (see the table below). Then start the API:
+
+```powershell
 npm run dev
 ```
 
@@ -143,11 +148,10 @@ Backend tests don't touch the real database. They cover the app setup, config ch
 
 Frontend tests cover routing, the System status card in all its states, the health hook and service, the sidebar and the shared components.
 
-Results on my machine: backend 24 passing, frontend 32 passing, both lint runs clean.
+Results on my machine: backend 27 passing, frontend 32 passing, both lint runs clean.
 
 ## Known issues
 
-- If MongoDB is down when the backend starts, the backend has to be restarted once MongoDB is back.
 - `npm audit` shows some moderate warnings in dev-only test tools (minimatch/glob inside Mocha, c8 and Jest). They don't ship with the app, and the `--force` fix downgrades the test runners, so I've left them for now.
 - The banner image is from the Canva design reference given for this project.
 

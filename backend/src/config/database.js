@@ -55,6 +55,63 @@ export async function connectDatabase(uri) {
 }
 
 /**
+ * Delay before retry number `attempt` (1, 2, 3, ...): 2s, 4s, 8s, 16s, then 30s at most.
+ * @param {number} attempt
+ * @returns {number} milliseconds
+ */
+export function retryDelay(attempt) {
+  return Math.min(2000 * 2 ** (attempt - 1), 30000);
+}
+
+/**
+ * Connects to MongoDB and keeps retrying with a growing delay if the first attempts fail.
+ * Mongoose does not reconnect by itself after a failed first connection, so this covers
+ * the case where MongoDB is down when the API starts.
+ * @param {string} uri - MongoDB connection string.
+ * @param {object} [options]
+ * @param {(uri: string) => Promise<unknown>} [options.connect] - Connect function (replaced in tests).
+ * @param {(attempt: number, delayMs: number) => void} [options.onRetry] - Called before each wait.
+ * @param {number} [options.baseDelayMs] - First delay; later delays double up to 15x this value.
+ * @returns {{ done: Promise<boolean>, cancel: () => void }} `done` resolves to true once connected,
+ *   or false if `cancel()` was called first.
+ */
+export function connectWithRetry(uri, { connect = connectDatabase, onRetry = () => {}, baseDelayMs = 2000 } = {}) {
+  let cancelled = false;
+  let timer = null;
+  let wake = null;
+
+  const wait = (ms) =>
+    new Promise((resolve) => {
+      wake = resolve;
+      timer = setTimeout(resolve, ms);
+    });
+
+  const done = (async () => {
+    for (let attempt = 1; !cancelled; attempt += 1) {
+      try {
+        await connect(uri);
+        return true;
+      } catch {
+        if (cancelled) break;
+        const delayMs = (retryDelay(attempt) / 2000) * baseDelayMs;
+        onRetry(attempt, delayMs);
+        if (!cancelled) await wait(delayMs);
+      }
+    }
+    return false;
+  })();
+
+  return {
+    done,
+    cancel() {
+      cancelled = true;
+      clearTimeout(timer);
+      if (wake) wake();
+    },
+  };
+}
+
+/**
  * Closes the MongoDB connection if it is open.
  * @returns {Promise<void>}
  */

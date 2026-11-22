@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { connectDatabase, describeReadyState, getDatabaseStatus } from '../config/database.js';
+import { connectDatabase, connectWithRetry, describeReadyState, getDatabaseStatus, retryDelay } from '../config/database.js';
 
 describe('database helpers', () => {
   it('maps every Mongoose readyState to a readable word', () => {
@@ -23,5 +23,41 @@ describe('database helpers', () => {
     }
     expect(caught).to.be.instanceOf(Error);
     expect(caught.message).to.match(/connection string is required/);
+  });
+
+  it('waits longer after each failed attempt, up to 30 seconds', () => {
+    expect([1, 2, 3, 4, 5, 6].map(retryDelay)).to.deep.equal([2000, 4000, 8000, 16000, 30000, 30000]);
+  });
+
+  it('retries a failed first connection until it succeeds', async () => {
+    let calls = 0;
+    const retries = [];
+    const connection = connectWithRetry('mongodb://example', {
+      baseDelayMs: 1,
+      connect: async () => {
+        calls += 1;
+        if (calls < 3) throw new Error('MongoDB is down');
+      },
+      onRetry: (attempt, delayMs) => retries.push([attempt, delayMs]),
+    });
+    expect(await connection.done).to.equal(true);
+    expect(calls).to.equal(3);
+    expect(retries).to.deep.equal([
+      [1, 1],
+      [2, 2],
+    ]);
+  });
+
+  it('stops retrying once cancelled', async () => {
+    let calls = 0;
+    const connection = connectWithRetry('mongodb://example', {
+      connect: async () => {
+        calls += 1;
+        throw new Error('MongoDB is down');
+      },
+      onRetry: () => connection.cancel(),
+    });
+    expect(await connection.done).to.equal(false);
+    expect(calls).to.equal(1);
   });
 });
