@@ -14,14 +14,24 @@ async function start() {
   }
 
   const app = createApp();
-  const server = app.listen(port, () => {
+  const server = app.listen(port, (err) => {
+    if (err) {
+      logger.error(err, 'Could not start the server');
+      disconnectDB().finally(() => process.exit(1));
+      return;
+    }
     logger.info(`API listening on http://localhost:${port}`);
   });
 
   const shutdown = () => {
-    server.close(async () => {
-      await disconnectDB();
-      process.exit(0);
+      server.close(async () => {
+      try {
+        await disconnectDB();
+        process.exit(0);
+      } catch (err) {
+        logger.error(err, 'Error while shutting down');
+        process.exit(1);
+      }
     });
   };
   process.on('SIGINT', shutdown);
