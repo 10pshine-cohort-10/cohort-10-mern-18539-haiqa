@@ -17,15 +17,26 @@ async function registerUser(data = validUser) {
   return request(app).post('/api/auth/register').send(data);
 }
 
+function dbName(uri) {
+  const match = uri.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^/?]*)/);
+  return match ? match[1] : '';
+}
+
 describe('Auth API', () => {
   before(async () => {
     const uri = process.env.MONGODB_TEST_URI;
     if (!uri) {
       throw new Error('MONGODB_TEST_URI is missing. Add a separate test database to backend/.env');
     }
-    if (uri === process.env.MONGODB_URI) {
-      throw new Error('MONGODB_TEST_URI must be different from MONGODB_URI, because tests delete data');
+
+    const testDb = dbName(uri);
+    if (!testDb || testDb === dbName(process.env.MONGODB_URI || '')) {
+      throw new Error('MONGODB_TEST_URI must use a different database name than MONGODB_URI, because tests delete data');
     }
+    if (!testDb.includes('test')) {
+      throw new Error('The test database name must contain "test", for example leafnote-test');
+    }
+
     await mongoose.connect(uri);
     await User.init();
   });

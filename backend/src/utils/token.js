@@ -17,3 +17,7 @@ export function signToken(userId) {
 export function verifyToken(token) {
   return jwt.verify(token, getSecret());
 }
+
+export function assertTokenConfig() {
+  getSecret();
+}

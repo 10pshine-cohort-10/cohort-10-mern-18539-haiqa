@@ -1,10 +1,10 @@
 import User from '../models/User.js';
-import { signToken } from '../utils/token.js';
+import { signToken, assertTokenConfig } from '../utils/token.js';
 
 export async function register(req, res, next) {
   try {
+    assertTokenConfig();
     const { name, email, password } = req.body;
-
     const existing = await User.findOne({ email: email.trim().toLowerCase() });
     if (existing) {
       return res.status(409).json({ success: false, message: 'Email is already registered' });

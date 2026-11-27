@@ -15,8 +15,10 @@ export function validateRegister(req, res, next) {
   if (!isText(name)) errors.push('Name is required');
   else if (name.trim().length > 50) errors.push('Name must be 50 characters or less');
   if (!isText(email) || !EMAIL_PATTERN.test(email.trim())) errors.push('A valid email is required');
-  if (typeof password !== 'string' || password.length < 6) {
+  if (typeof password !== 'string' || password.trim().length === 0 || password.length < 6) {
     errors.push('Password must be at least 6 characters');
+  } else if (Buffer.byteLength(password, 'utf8') > 72) {
+    errors.push('Password must be 72 bytes or less');
   }
 
   if (errors.length > 0) return sendErrors(res, errors);
