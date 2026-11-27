@@ -6,7 +6,9 @@ export function notFound(req, res) {
 
 export function errorHandler(err, req, res, _next) {
   const status = err.status || 500;
-  logger.error(err);
+  const safe = { status, name: err.name, type: err.type, method: req.method, path: req.path };
+  if (status >= 500 && err.body === undefined) safe.stack = err.stack;
+  logger.error(safe, 'Request failed');
   res.status(status).json({
     success: false,
     message: status === 500 ? 'Something went wrong' : err.message,
