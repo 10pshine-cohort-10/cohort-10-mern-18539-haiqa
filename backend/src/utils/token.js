@@ -1,0 +1,23 @@
+import jwt from 'jsonwebtoken';
+
+function getSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is missing. Add it to backend/.env');
+  }
+  return secret;
+}
+
+export function signToken(userId) {
+  return jwt.sign({ id: userId }, getSecret(), {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  });
+}
+
+export function verifyToken(token) {
+  return jwt.verify(token, getSecret());
+}
+
+export function assertTokenConfig() {
+  getSecret();
+}
